@@ -1,8 +1,10 @@
 -- Histogram showing distribution of patients
-USE patient;
-SELECT ROUND(time_in_hospital, 1) AS bucket, 
-COUNT(*) AS count,
-RPAD('', COUNT(*)/100, '*') AS bar 
+SELECT 
+	time_in_hospital,
+	COUNT(*) AS count
 FROM health
-GROUP BY bucket
-ORDER BY bucket;
+GROUP BY time_in_hospital
+ORDER BY count desc
+
+
+
