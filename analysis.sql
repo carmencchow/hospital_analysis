@@ -98,3 +98,18 @@ ORDER BY
   num_medications DESC, 
   num_lab_procedures DESC
 LIMIT 50;
+
+-- Types of readmissions per race --
+SELECT 
+  demographics.race,
+  COUNT(CASE WHEN health.readmitted = 'NO' THEN 1 END) AS 'NO',
+  COUNT(CASE WHEN health.readmitted = '<30' THEN 1 END) AS '<30',
+  COUNT(CASE WHEN health.readmitted = '>30' THEN 1 END) AS '>30',
+  COUNT(demographics.patient_nbr) AS patient_count
+FROM demographics 
+INNER JOIN health 
+  ON health.patient_nbr = demographics.patient_nbr
+WHERE race <> '?'
+GROUP BY 
+  demographics.race;
+
