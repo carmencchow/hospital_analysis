@@ -1,3 +1,9 @@
+-- Check data types -- 
+SELECT 
+	column_name,
+DATA_TYPE from INFORMATION_SCHEMA.COLUMNS
+WHERE table_name = 'health';
+
 -- Return first 10 rows
 SELECT * FROM health
 LIMIT 10
@@ -67,3 +73,28 @@ CASE
 FROM patient.health
 GROUP BY procedure_frequency
 ORDER BY avg_time DESC
+
+-- Summarize top 50 medication patients
+SELECT 
+  CONCAT(
+    'Patient ', health.patient_nbr, 
+    ' was ', demographics.race, 
+    ' and ', 
+    (
+      CASE 
+      WHEN readmitted = 'NO' THEN 'was not readmitted. They had ' 
+      ELSE 'was readmitted. They had ' 
+      END
+    ), 
+    num_medications, ' medications and ', 
+    num_lab_procedures, ' lab procedures.'
+) AS summary
+FROM 
+  patient.health
+INNER JOIN 
+  patient.demographics 
+  ON demographics.patient_nbr = health.patient_nbr
+ORDER BY 
+  num_medications DESC, 
+  num_lab_procedures DESC
+LIMIT 50;
