@@ -74,31 +74,6 @@ FROM patient.health
 GROUP BY procedure_frequency
 ORDER BY avg_time DESC
 
--- Summarize top 50 medication patients
-SELECT 
-  CONCAT(
-    'Patient ', health.patient_nbr, 
-    ' was ', demographics.race, 
-    ' and ', 
-    (
-      CASE 
-      WHEN readmitted = 'NO' THEN 'was not readmitted. They had ' 
-      ELSE 'was readmitted. They had ' 
-      END
-    ), 
-    num_medications, ' medications and ', 
-    num_lab_procedures, ' lab procedures.'
-) AS summary
-FROM 
-  patient.health
-INNER JOIN 
-  patient.demographics 
-  ON demographics.patient_nbr = health.patient_nbr
-ORDER BY 
-  num_medications DESC, 
-  num_lab_procedures DESC
-LIMIT 50;
-
 -- Types of readmissions per race --
 SELECT 
   demographics.race,
@@ -113,3 +88,86 @@ WHERE race <> '?'
 GROUP BY 
   demographics.race;
 
+-- % Types of readmissions per race --
+SELECT 
+	demographics.race,
+	ROUND((COUNT(CASE WHEN health.readmitted = 'NO' THEN 1 END) * 100.0 / COUNT(demographics.patient_nbr)),1) AS 'not readmitted %',
+	ROUND((COUNT(CASE WHEN health.readmitted = '<30' THEN 1 END) * 100.0 / COUNT(demographics.patient_nbr)),1) AS 'readmitted <30 %',
+	ROUND((COUNT(CASE WHEN health.readmitted = '>30' THEN 1 END) * 100.0 / COUNT(demographics.patient_nbr)),1) AS 'readmitted >30 %'
+FROM demographics 
+INNER JOIN health 
+    ON health.patient_nbr = demographics.patient_nbr
+GROUP BY 
+    demographics.race;
+
+-- Metformin patients --
+SELECT 
+	patient_nbr, 
+    race
+FROM demographics 
+WHERE race = 'AfricanAmerican' 
+UNION 
+SELECT 
+	patient_nbr,
+    '' AS race
+FROM health 
+WHERE metformin = 'Up';
+
+-- Return a summary of top 50 patients --
+SELECT 
+  CONCAT(
+    'Patient ', health.patient_nbr, 
+    ' was ', demographics.race, 
+    ' and ', 
+    (
+      CASE 
+      WHEN readmitted = 'NO' THEN 'was not readmitted. They had ' 
+      ELSE 'was readmitted. They had ' 
+      END
+    ), 
+    num_medications, ' medications and ', 
+    num_lab_procedures, ' lab procedures.'
+) AS summary, 
+race
+FROM 
+  health
+INNER JOIN 
+  demographics 
+  ON demographics.patient_nbr = health.patient_nbr
+ORDER BY 
+  num_lab_procedures DESC,
+  num_medications DESC 
+LIMIT 50;
+
+-- Add subquery to count number of patients from each race --
+SELECT 
+  race,
+  COUNT(*) AS race_count
+FROM (
+  SELECT 
+    demographics.race,
+    CONCAT(
+      'Patient ', health.patient_nbr, 
+      ' was ', demographics.race, 
+      ' and ', 
+      (
+        CASE 
+        WHEN readmitted = 'NO' THEN 'was not readmitted. They had ' 
+        ELSE 'was readmitted. They had ' 
+        END
+      ), 
+      num_medications, ' medications and ', 
+      num_lab_procedures, ' lab procedures.'
+    ) AS summary
+  FROM 
+    health
+  INNER JOIN 
+    demographics 
+    ON demographics.patient_nbr = health.patient_nbr
+  ORDER BY 
+    num_lab_procedures DESC,
+    num_medications DESC 
+  LIMIT 50
+) AS patient_data
+GROUP BY 
+  race;
